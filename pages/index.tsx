@@ -128,7 +128,8 @@ const CheckCanput = (
     //隣のセルが同じ色or0なら次のループへ
     if (
       board[y + direction[i][1]][x + direction[i][0]] === 0 ||
-      board[y + direction[i][1]][x + direction[i][0]] === playercolor     ) {
+      board[y + direction[i][1]][x + direction[i][0]] === playercolor
+    ) {
       continue
     }
     tempcells.push([y + direction[i][1], x + direction[i][0]])
@@ -171,7 +172,7 @@ const HomePage: NextPage = () => {
   const [turn, setTurn] = useState(1)
   //変数IsLastPassに初期値を代入
   const [IsLastPass, setIsLastPass] = useState(false)
-  //変数IsGameEndに初期値を代入
+  //変数IsGameEndに初期値を代入 Trueになったらゲーム終了
   const [IsGameEnd, setIsGameEnd] = useState(false)
   useEffect(() => {
     const playercolor = turn % 2 === 0 ? 1 : 2
@@ -182,21 +183,46 @@ const HomePage: NextPage = () => {
         CanputList = CanputList.concat(CheckCanput(i, j, playercolor, board))
       }
     }
+    if (IsGameEnd === true) {
+      let blackcount = 0
+      let whitecount = 0
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          if (board[i][j] === 1) {
+            blackcount++
+          } else if (board[i][j] === 2) {
+            whitecount++
+          }
+        }
+      }
+      //Canputlistに要素を追加してif (CanputList.length === 0)を回避している。
+      if (blackcount > whitecount) {
+        setBoard(InitialBoardData)
+        alert('黒の勝ちです')
+        CanputList.push([-1, -1])
+      } else if (blackcount < whitecount) {
+        setBoard(InitialBoardData)
+        alert('白の勝ちです')
+        CanputList.push([-1, -1])
+      } else {
+        setBoard(InitialBoardData)
+        alert('引き分けです')
+        CanputList.push([-1, -1])
+      }
+    }
     if (CanputList.length === 0) {
       console.log(CanputList)
       alert('置けるマスがありません！パスします')
       setTurn(turn + 1)
       //もし、前のターンもパスだったらゲーム終了
       if (IsLastPass === true) {
-        alert('ゲーム終了')
         setIsGameEnd(true)
+        //Canputlistを追加して無理やり条件を外す
       } else {
         setIsLastPass(true)
       }
     }
-  }, [turn, board, IsLastPass, IsGameEnd])
-
-  let history = InitialBoardData
+  }, [IsGameEnd, IsLastPass, board, turn])
 
   return (
     <Container>
@@ -205,7 +231,7 @@ const HomePage: NextPage = () => {
           return (
             <Mainarea key={`${i}-${j}`}>
               <Square
-                //jがx,iがy
+                //jがx,iがyに留意する
                 x={j}
                 y={i}
                 color={board[i][j]}
@@ -219,7 +245,6 @@ const HomePage: NextPage = () => {
                   //そうで無いなら、そこに置けるかどうか調べて、ひっくり返す
                   else {
                     const filplist = CheckCanput(x, y, playercolor, board)
-                    history = board
                     const newboard = board
                     for (let i = 0; i < filplist.length; i++) {
                       const filp = filplist[i]
@@ -247,10 +272,11 @@ const HomePage: NextPage = () => {
       </button>
       <button
         onClick={() => {
-          setBoard(history)
+          setBoard(InitialBoardData)
+          setTurn(1)
         }}
       >
-        一手戻る
+        はじめから
       </button>
     </Container>
   )
