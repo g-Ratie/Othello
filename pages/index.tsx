@@ -81,7 +81,7 @@ const Mainarea = styled.div`
   height: 75px;
   border: 1px solid black;
 `
-// 1を白,2を黒,0を未配置と想定 これをSquareTypeと関連付けているはず
+// 1を白,2を黒,0を未配置と想定
 const InitialBoardData = [
   [0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0],
@@ -272,8 +272,10 @@ const HomePage: NextPage = () => {
       </button>
       <button
         onClick={() => {
+          //リロードを挟んで初期化
           setBoard(InitialBoardData)
           setTurn(1)
+          window.location.reload()
         }}
       >
         はじめから
