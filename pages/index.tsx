@@ -1,6 +1,6 @@
 import type { NextPage } from 'next'
 import { Main } from 'next/document'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState,} from 'react'
 import styled from 'styled-components'
 
 const StyledSquare = styled.button`
@@ -47,18 +47,15 @@ export const Square = (props: {
   const { color, onClick, x, y } = props
   return (
     <StyledSquare onClick={() => onClick(x, y)}>
-      {
-        //TODO 三項演算子これでいいか確認する そもそもSquareTypeを使わない可能性が高い
-        color === SquareType.Undef ? (
-          ''
-        ) : color === SquareType.Black ? (
-          <BlackSquare />
-        ) : color === SquareType.White ? (
-          <WhiteSquare />
-        ) : (
-          <TempSquare />
-        )
-      }
+      {color === SquareType.Undef ? (
+        ''
+      ) : color === SquareType.Black ? (
+        <BlackSquare />
+      ) : color === SquareType.White ? (
+        <WhiteSquare />
+      ) : (
+        <TempSquare />
+      )}
     </StyledSquare>
   )
 }
@@ -94,6 +91,7 @@ const InitialBoardData = [
 ]
 
 //クリックしたセルの情報とボードの情報を渡す
+//TODO 置ける場所表示のために改修する
 const CheckCanput = (
   x: number,
   y: number,
@@ -111,7 +109,7 @@ const CheckCanput = (
     [-1, -1],
   ]
   const playercolor = color
-  console.log('playercolor', playercolor)
+  const enemycolor = color === 1 ? 2 : 1
   //「ひっくり返せることが確定した」石のリスト
   let results: number[][] = []
 
@@ -127,8 +125,9 @@ const CheckCanput = (
     }
     //隣のセルが同じ色or0なら次のループへ
     if (
-      board[y + direction[i][1]][x + direction[i][0]] === 0 ||
-      board[y + direction[i][1]][x + direction[i][0]] === playercolor
+      board[dy][dx] === 0 ||
+      board[dy][dx] === playercolor ||
+      board[dy][dx] === 3
     ) {
       continue
     }
@@ -147,16 +146,18 @@ const CheckCanput = (
       if (board[nexty][nextx] === 0) {
         continue
       }
+      console.log(nextx, nexty)
       //もし調べたセルが自分の色ならresultsにtempcellsを追加して終わる
-      if (board[nexty][nextx] === color) {
+      if (board[nexty][nextx] === playercolor) {
         results = results.concat(tempcells)
         break
-      } else {
+      }
+      //もし調べたセルが相手の色ならtempcellsに追加して次のループへ
+      else if (board[nexty][nextx] === enemycolor) {
         tempcells.push([nexty, nextx])
       }
     }
   }
-  console.log('results', results)
   return results
 }
 
@@ -174,14 +175,42 @@ const HomePage: NextPage = () => {
   const [IsLastPass, setIsLastPass] = useState(false)
   //変数IsGameEndに初期値を代入 Trueになったらゲーム終了
   const [IsGameEnd, setIsGameEnd] = useState(false)
+
   useEffect(() => {
     const playercolor = turn % 2 === 0 ? 1 : 2
-    let CanputList: number[][] = []
+    console.log('turn', turn, turn % 2 === 0 ? '白' : '黒')
+    //盤面の全てのセルに対しての置けるところのリスト
+    const CanputList: number[][] = []
+    //盤面の全てのセルに対して、置けるところをリストに追加する
+    //i = x j = y
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
-        //もしセルが0ならcontinueで次のループへ
-        CanputList = CanputList.concat(CheckCanput(i, j, playercolor, board))
+        //もしセルに仮のコマが置かれているなら削除
+        if (board[j][i] === 3) {
+          board[j][i] = 0
+        }
+        //もしセルに既にコマが置かれているなら次のループへ
+        if (board[j][i] !== 0) {
+          continue
+        }
+        //i,jのセルに置けないかチェック
+        if (CheckCanput(i, j, playercolor, board).length === 0) {
+          continue
+        }
+        //おけたらリストに追加
+        else {
+          CanputList.push([j, i])
+        }
       }
+    }
+    console.log(CanputList)
+    //置けるところを3にする
+    for (let i = 0; i < CanputList.length; i++) {
+      const highlightcell = CanputList[i]
+      const newboard = board.slice(0, board.length)
+      newboard[highlightcell[0]][highlightcell[1]] = 3
+      console.log(newboard)
+      setBoard(newboard)
     }
     if (IsGameEnd === true) {
       let blackcount = 0
@@ -189,9 +218,9 @@ const HomePage: NextPage = () => {
       for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
           if (board[i][j] === 1) {
-            blackcount++
-          } else if (board[i][j] === 2) {
             whitecount++
+          } else if (board[i][j] === 2) {
+            blackcount++
           }
         }
       }
@@ -211,25 +240,22 @@ const HomePage: NextPage = () => {
       }
     }
     if (CanputList.length === 0) {
-      console.log(CanputList)
       alert('置けるマスがありません！パスします')
       setTurn(turn + 1)
       //もし、前のターンもパスだったらゲーム終了
       if (IsLastPass === true) {
         setIsGameEnd(true)
-        //Canputlistを追加して無理やり条件を外す
       } else {
         setIsLastPass(true)
       }
     }
-  }, [IsGameEnd, IsLastPass, board, turn])
-
+  }, [turn, IsGameEnd, IsLastPass])
   return (
     <Container>
       {board.map((row: number[], i: number) => {
         return row.map((stone: number, j: number) => {
           return (
-            <Mainarea key={`${i}-${j}`}>
+            <Mainarea key={`${j}-${i}`}>
               <Square
                 //jがx,iがyに留意する
                 x={j}
@@ -237,13 +263,15 @@ const HomePage: NextPage = () => {
                 color={board[i][j]}
                 onClick={(x: number, y: number) => {
                   const playercolor = turn % 2 === 0 ? 1 : 2
-                  //もし、クリックした位置に石があればアラートを出すだけ
+                  //もし、クリックした位置から１マスも置けないならaleet
                   if (CheckCanput(x, y, playercolor, board).length === 0) {
-                    console.log(CheckCanput(x, y, playercolor, board))
+                    alert('そこには置けません')
+                  } else if (board[y][x] !== 3) {
                     alert('そこには置けません')
                   }
-                  //そうで無いなら、そこに置けるかどうか調べて、ひっくり返す
+                  //そうで無いなら、ひっくり返す
                   else {
+                    setTurn(turn + 1)
                     const filplist = CheckCanput(x, y, playercolor, board)
                     const newboard = board
                     for (let i = 0; i < filplist.length; i++) {
@@ -252,7 +280,6 @@ const HomePage: NextPage = () => {
                       setBoard(newboard)
                     }
                     newboard[y][x] = playercolor
-                    setTurn(turn + 1)
                     setIsLastPass(false)
                   }
                 }}
