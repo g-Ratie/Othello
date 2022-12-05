@@ -3,8 +3,6 @@ import { Main } from 'next/document'
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
-//TODO 
-
 export const StyledSquare = styled.button`
   background-color: green;
   padding: 10px;
@@ -93,8 +91,9 @@ const InitialBoardData = [
   [0, 0, 0, 0, 0, 0, 0, 0],
 ]
 
+
+
 //クリックしたセルの情報とボードの情報を渡す
-//TODO 置ける場所表示のために改修する
 const CheckCanput = (
   x: number,
   y: number,
@@ -247,7 +246,7 @@ const Othello: NextPage = () => {
         setIsLastPass(true)
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turn, IsGameEnd, IsLastPass])
   return (
     <Container>
@@ -306,7 +305,6 @@ const Othello: NextPage = () => {
       >
         初期化
       </button>
-
     </Container>
   )
 }
